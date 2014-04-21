@@ -1,0 +1,7 @@
+#!/bin/sh
+until false; do
+  node $1 &
+  inotifywait ./ -r -q -e close_write
+  kill -9 $!
+  clear
+done
