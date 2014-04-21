@@ -1,7 +1,7 @@
 My Bin(s)
 =========
 
-## InstallI
+## Install
 ```sh
 git clone https://github.com/crzidea/my-bins.git ~/my-bins
 mkdir -p ~/bin/
