@@ -1,0 +1,10 @@
+#!/bin/sh
+dir=$1
+shift 1
+cmd=$*
+until false; do
+  clear
+  $cmd &
+  inotifywait $dir -r -q -e close_write
+  kill -9 $!
+done
