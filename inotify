@@ -5,6 +5,6 @@ cmd=$*
 until false; do
   clear
   $cmd &
-  inotifywait $dir -r -q -e close_write
+  inotifywait $dir -r -q -e close_write --exclude .git
   kill -9 $!
 done
