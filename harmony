@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+program=$(basename $0)
+${program%%h} --harmony
