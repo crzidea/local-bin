@@ -7,7 +7,7 @@ exclude="\/\..+"
 if [[ "Darwin" == `uname` ]]; then
   watcher="fswatch -1 $dir -l 0.1 --exclude $exclude -E"
 else
-  watcher="inotifywait $dir -r -q -e close_write --exclude \/\..+"
+  watcher="inotifywait $dir -r -q -e close_write --exclude $exclude"
 fi
 
 until false; do
