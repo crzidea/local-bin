@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
+# exit while press Control-C on OSX
+set -e
+
 dir=$1
 shift 1
 cmd=$*
