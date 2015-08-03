@@ -2,9 +2,10 @@
 dir=$1
 shift 1
 cmd=$*
+exclude="\/\..+"
 
 if [[ "Darwin" == `uname` ]]; then
-  watcher="fswatch -1 $dir --exclude .git"
+  watcher="fswatch -1 $dir -l 0.1 --exclude $exclude -E"
 else
   watcher="inotifywait $dir -r -q -e close_write --exclude \/\..+"
 fi
