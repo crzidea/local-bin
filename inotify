@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # exit while press Control-C on OSX
-set -e
+trap "exit" INT
 
 dir=$1
 shift 1
@@ -17,5 +17,7 @@ until false; do
   clear
   $cmd &
   $watcher
-  kill -9 $!
+  watcher_pid=$!
+  pkill -P $watcher_pid >/dev/null
+  kill $watcher_pid >/dev/null
 done
