@@ -17,7 +17,7 @@ until false; do
   clear
   $cmd &
   $watcher
-  watcher_pid=$!
-  pkill -P $watcher_pid >/dev/null
-  kill $watcher_pid >/dev/null
+  job_pid=$!
+  pkill -P $job_pid >/dev/null
+  kill $job_pid >/dev/null
 done
