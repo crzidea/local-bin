@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+diff package.json .previous-package.json 2>/dev/null
+[[ $? -eq 0 && -z "$REINSTALL" ]] && exit
+npm install
+cp package.json .previous-package.json
