@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+path_pm2=`npm bin`
+path_node=$(dirname `nvm which node`)
+PATH=$PATH:$path_node
+
+$path_pm2/pm2 delete pm2.json
+$path_pm2/pm2 startOrGracefulReload pm2.json
+
+if [[ -f /etc/redhat-release ]]; then
+  sudo env \
+    PATH=$PATH \
+    PM2_HOME=$HOME/.pm2 \
+    $path_pm2/pm2 startup redhat -u $USER
+fi
