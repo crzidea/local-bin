@@ -1,5 +1,19 @@
 #!/usr/bin/env sh
+# env: NPM_LAZYINSTALL_HOST
+
+package_name=`node -p "require('./package.json').name"`
+dist_dir="~/.tmp/${package_name}"
+dist="${NPM_LAZYINSTALL_HOST}:${dist_dir}"
+ssh="ssh -o StrictHostKeyChecking=no"
+$ssh $NPM_LAZYINSTALL_HOST "mkdir -p ${dist_dir}/"
+rsync -az -e "$ssh" "${dist}/package.json" .previous-package.json
 diff package.json .previous-package.json 2>/dev/null
-[[ $? -eq 0 && -z "$REINSTALL" ]] && exit
-npm install
-cp package.json .previous-package.json
+if [[ $? -eq 0 && -z "$REINSTALL" ]]; then
+  rsync -az -e "$ssh" --delete "${dist}/node_modules" ./
+  echo modules are loaded fram $dist/
+else
+  npm install
+  rsync -az -e "$ssh" package.json "${dist}/package.json"
+  rsync -az -e "$ssh" --delete node_modules "${dist}/"
+  echo modules are saved at $dist/
+fi
