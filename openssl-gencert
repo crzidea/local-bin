@@ -1,10 +1,32 @@
 #!/usr/bin/env sh
 # Usage:
-#   openssl-gencert hello-world
+#   openssl-gencert localhost
 # Inspired by https://nodejs.org/api/tls.html#tls_tls_ssl_concepts
-dest=$1
-mkdir -p $dest
-cd $dest
+set -e
+workdir=$PWD
+ca_dir="$HOME/.ca"
+
+if [[ -d $ca_dir ]]; then
+  echo $ca_dir exists
+  >$ca_dir/index.txt
+else
+  mkdir -p $ca_dir
+  cd $ca_dir
+  mkdir -p newcerts private
+  touch index.txt
+  echo 00 >serial
+  openssl genrsa -out private/cakey.pem 2048
+  openssl req \
+    -new -sha256 \
+    -key private/cakey.pem \
+    -subj "/CN=${USER} Root CA" \
+    -out cacsr.pem
+  openssl x509 -req -in cacsr.pem -signkey private/cakey.pem -out cacert.pem
+fi
+
+common_name=$1
+mkdir -p $workdir/$common_name
+cd $workdir/$common_name
 openssl genrsa -out key.pem 2048
-openssl req -new -sha256 -key key.pem -out csr.pem
-openssl x509 -req -in csr.pem -signkey key.pem -out cert.pem
+openssl req -new -sha256 -key key.pem -out csr.pem -subj "/CN=${common_name}"
+openssl ca -batch -config ~/.confbook/openssl.cnf -in csr.pem -out ./cert.pem
