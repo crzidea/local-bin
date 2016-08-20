@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
+# Usage:
+#   openssl-gencert hello-world
+# Inspired by https://nodejs.org/api/tls.html#tls_tls_ssl_concepts
 dest=$1
 mkdir -p $dest
 cd $dest
