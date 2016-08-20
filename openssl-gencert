@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+dest=$1
+mkdir -p $dest
+cd $dest
+openssl genrsa -out key.pem 2048
+openssl req -new -sha256 -key key.pem -out csr.pem
+openssl x509 -req -in csr.pem -signkey key.pem -out cert.pem
