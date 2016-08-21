@@ -1,7 +1,10 @@
 #!/usr/bin/env sh
 # Usage:
 #   openssl-gencert localhost
-# Inspired by https://nodejs.org/api/tls.html#tls_tls_ssl_concepts
+# This script depends ~/.openssl.cnf, download example from:
+#   https://github.com/crzidea/confbook/blob/master/.openssl.cnf
+# Inspired by:
+#   https://nodejs.org/api/tls.html#tls_tls_ssl_concepts
 set -e
 workdir=$PWD
 ca_dir="$HOME/.ca"
@@ -19,9 +22,13 @@ else
   openssl req \
     -new -sha256 \
     -key private/cakey.pem \
-    -subj "/CN=${USER} Root CA" \
+    -subj "/CN=${USER}@${HOSTNAME} Root CA" \
     -out cacsr.pem
-  openssl x509 -req -in cacsr.pem -signkey private/cakey.pem -out cacert.pem
+  openssl x509 -req \
+    -in cacsr.pem \
+    -signkey private/cakey.pem \
+    -days 3650 \
+    -out cacert.pem
 fi
 
 common_name=$1
@@ -29,4 +36,4 @@ mkdir -p $workdir/$common_name
 cd $workdir/$common_name
 openssl genrsa -out key.pem 2048
 openssl req -new -sha256 -key key.pem -out csr.pem -subj "/CN=${common_name}"
-openssl ca -batch -config ~/.confbook/openssl.cnf -in csr.pem -out ./cert.pem
+openssl ca -batch -config $HOME/.openssl.cnf -in csr.pem -out ./cert.pem
