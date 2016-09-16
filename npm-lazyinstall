@@ -10,7 +10,7 @@ rsync -az -e "$ssh" "${dist}/package.json" .previous-package.json
 diff package.json .previous-package.json 2>/dev/null
 if [[ $? -eq 0 && -z "$REINSTALL" ]]; then
   rsync -az -e "$ssh" --delete "${dist}/node_modules" ./
-  echo modules are loaded fram $dist/
+  echo modules are loaded from $dist/
 else
   npm install
   rsync -az -e "$ssh" package.json "${dist}/package.json"
