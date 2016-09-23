@@ -2,11 +2,15 @@
 # install nvm
 if [[ -d ~/.nvm ]]; then
   echo "nvm was already installed."
+  cd ~/.nvm
+  git fetch origin
 else
   echo "install nvm"
   git clone https://github.com/creationix/nvm.git ~/.nvm
-  cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`
+  cd ~/.nvm
 fi
+
+git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" origin`
 
 # save PREFIX
 prefix_save=$PREFIX
