@@ -8,5 +8,13 @@ else
   cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`
 fi
 
+# save PREFIX
+prefix_save=$PREFIX
+unset PREFIX
+
 source ~/.nvm/nvm.sh
 nvm install stable
+echo `nvm version` >~/.nvmrc
+
+# restore PREFIX
+PREFIX=$prefix_save
