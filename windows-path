@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Usage:
+#   windows-path 'C:\Users\think\AppData'
+
+drive=$(echo ${1%:*} | tr '[A-Z]' '[a-z]')
+path=$(echo ${1#*:} | tr '\\' '\/')
+echo "/mnt/$drive/$path"
