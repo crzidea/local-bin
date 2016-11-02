@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
-str=$(pgrep $* | tr "\n" ,)
+str=$(pgrep $* | head -n 20 | tr "\n" ,)
 pids=${str%,}
 top -p $pids
