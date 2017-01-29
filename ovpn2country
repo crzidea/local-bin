@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+bestroutetb --force --route.vpn=$1 --profile openvpn --output route-table.ovpn
+num_lines=$(wc -l route-table.ovpn | awk '{print $1}')
+num_lines=$((num_lines+1))
+
+rm generated.ovpn 2>/dev/null
+cat client.ovpn                 >>generated.ovpn
+echo "auth-user-pass auth.txt"  >>generated.ovpn
+echo "max-routes $num_lines"    >>generated.ovpn
+cat route-table.ovpn            >>generated.ovpn
+
+exec sudo openvpn --config generated.ovpn
+#pid=$!
+#sleep 20
+#ip route show
+#kill $pid
