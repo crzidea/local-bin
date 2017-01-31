@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
+# Usage:
+#   ovpn2country us
+
 bestroutetb --force --route.vpn=$1 --profile openvpn --output route-table.ovpn
 num_lines=$(wc -l route-table.ovpn | awk '{print $1}')
 num_lines=$((num_lines+1))
