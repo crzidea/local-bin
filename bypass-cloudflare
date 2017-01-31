@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+ranges=$(curl -s https://www.cloudflare.com/ips-v4)
+set -ex
+for range in $ranges; do
+  sudo ip route add $range via $1
+done
