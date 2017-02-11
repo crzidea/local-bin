@@ -19,7 +19,7 @@ netmask()
 ranges=$(cat $1)
 output=
 output="$1.extended"
-echo >$output
+rm $output 2>/dev/null
 for range in $ranges ; do
     ip=$(echo "$range" | awk -F '/' '{print $1}')
     num=$(echo "$range" | awk -F '/' '{print $2}')
