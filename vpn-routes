@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+output=$1
+bestroutetb -o $output.tmp \
+    -f --no-default-gateway \
+    -p custom \
+    --rule-format='%prefix %mask %gw
+'
+grep " vpn$" $output.tmp | awk '{print $1" "$2}' >$output
+rm $output.tmp
