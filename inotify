@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # exit while press Control-C on OSX
 trap "exit" INT
 
@@ -7,7 +7,7 @@ shift 1
 cmd=$*
 exclude="\/\..+"
 
-if [ "Darwin" = `uname` ]; then
+if [[ "Darwin" == `uname` ]]; then
   watcher="fswatch -1 $dir -l 0.1 --exclude $exclude -E"
 else
   watcher="inotifywait $dir -r -q -e close_write --exclude $exclude"
