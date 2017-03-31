@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Usage:
+#   Add env in `~/.ddhs` as following:
+#
+#   ```
+#   zone_id=
+#   dns_recard_id=
+#   auth_email=
+#   auth_key=
+#   name=
+#   ```
+#
+#   Then run `update-ddns`
+
+set -e
+
+ip=$(curl -s https://api.ipify.org)
+
+source $HOME/.ddns
+data='{"type":"A","name":"${name}","content":"${ip}","ttl":120,"proxied":false}'
+data=${data//$\{ip\}/$ip}
+data=${data//$\{name\}/$name}
+
+curl -X PUT "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records/${dns_recard_id}" \
+     -H "X-Auth-Email: $auth_email" \
+     -H "X-Auth-Key: $auth_key" \
+     -H "Content-Type: application/json" \
+     --data $data
