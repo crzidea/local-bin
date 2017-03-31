@@ -10,13 +10,15 @@
 #   name=
 #   ```
 #
-#   Then run `update-ddns`
+#   Then run `ddns`
 
 set -e
 
 ip=$(curl -s https://api.ipify.org)
 
-source $HOME/.ddns
+vars=${1:-$HOME/.ddns}
+source $vars
+
 data='{"type":"A","name":"${name}","content":"${ip}","ttl":120,"proxied":false}'
 data=${data//$\{ip\}/$ip}
 data=${data//$\{name\}/$name}
