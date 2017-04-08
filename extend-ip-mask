@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+int2ip()
+{
+    local ui32=$1; shift
+    local ip="" n
+    for n in 1 2 3 4; do
+        ip=$((ui32 & 0xff))${ip:+.}$ip
+        ui32=$((ui32 >> 8))
+    done
+    echo $ip
+}
+
+netmask()
+{
+    local mask=$((0xffffffff << (32 - $1))); shift
+    int2ip $mask
+}
+
+ranges=$(cat $1)
+output=
+output="$1.extended"
+rm $output 2>/dev/null
+for range in $ranges ; do
+    ip=$(echo "$range" | awk -F '/' '{print $1}')
+    num=$(echo "$range" | awk -F '/' '{print $2}')
+    mask=$(netmask $num)
+	echo "$ip $mask" >>$output
+done

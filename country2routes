@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 curl 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' \
     | grep ipv4 \
-    | grep $1 \
+    | grep -i $1 \
     | awk -F\| '{ printf("%s/%d\n", $4, 32-log($5)/log(2)) }' \
     > routes-$1.txt
