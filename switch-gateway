@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+switch_file=/etc/openvpn/gateway.switch
+
+start() {
+  echo "redirect-gateway def1" >$switch_file
+  /etc/init.d/shadowsocks stop
+  /etc/init.d/openvpn restart
+}
+
+stop() {
+  echo "" >$switch_file
+  /etc/init.d/shadowsocks start
+  /etc/init.d/openvpn restart
+}
