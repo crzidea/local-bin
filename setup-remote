@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Usage:
+#   setup-remote server
+echo 'Not Implenmented'
