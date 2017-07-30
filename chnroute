@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # Usage: chnroute /etc/config/chnroute
 set -e
 tmp=/tmp/chnroute.txt
