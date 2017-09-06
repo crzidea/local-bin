@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Usage:
+#   docker-compose-log node
+while [[ true ]]; do
+  docker logs -f --tail 0 `docker-compose ps -q $1`
+done
