@@ -16,7 +16,7 @@ set -e
 
 ip=$(curl -s https://api.ipify.org)
 
-vars=${1:-$HOME/.ddns}
+vars=${1:-$HOME/.local/etc/ddns}
 source $vars
 
 data='{"type":"A","name":"${name}","content":"${ip}","ttl":120,"proxied":false}'
