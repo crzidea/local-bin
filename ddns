@@ -11,10 +11,15 @@
 #   ```
 #
 #   Then run `ddns`
+which dig >/dev/null
+if [[ $? -ne 0 ]]; then
+  sudo apt install -y dnsutils
+fi
 
 set -e
 
-ip=$(curl -s https://api.ipify.org)
+#ip=$(curl -s https://api.ipify.org)
+ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
 vars=${1:-$HOME/.local/etc/ddns}
 source $vars
