@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+mkdir -p $HOME/.ethereum
+cd $HOME/.ethereum
+exec nohup geth --rpc &
