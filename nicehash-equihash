@@ -6,5 +6,5 @@ killall nheqminer
 worker=${HOSTNAME/\.*/}
 nohup ~/.local/bin/nheqminer -cd 0 \
   -l equihash.$location.nicehash.com:3357 \
-  -u $address.worker.x \
+  -u $address.$worker.x \
   1>equihash.log 2>&1 &
