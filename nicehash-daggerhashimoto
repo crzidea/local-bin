@@ -8,4 +8,4 @@ nohup ~/.local/bin/ethminer --opencl \
   --stratum-protocol 2 \
   --stratum daggerhashimoto.$location.nicehash.com:3353 \
   --userpass $address.$worker.x \
-  1>eth.log 2>&1 &
+  1>daggerhashimoto.log 2>&1 &
