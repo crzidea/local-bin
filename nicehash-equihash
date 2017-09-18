@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
+algorithm="equihash"
 . ~/.local/etc/nicehash
 mkdir -p ~/.nicehash
 cd ~/.nicehash
 killall nheqminer
-worker=${HOSTNAME/\.*/}
 nohup ~/.local/bin/nheqminer -cd 0 \
-  -l equihash.$location.nicehash.com:3357 \
+  -l $algorithm.$location.nicehash.com:3357 \
   -u $address.$worker.x \
   1>equihash.log 2>&1 &

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+algorithm="cryptonight"
+. ~/.local/etc/nicehash
+mkdir -p ~/.nicehash
+cd ~/.nicehash
+sed -i "s/^\"wallet_address\".*/\"wallet_address\":\"$address.$worker\",/" ~/.local/etc/nicehash-cryptonight
+sed -i "s/^\"pool_address\".*/\"pool_address\":\"$algorithm.$location.nicehash.com:3355\",/" ~/.local/etc/nicehash-cryptonight
+killall xmr-stak-cpu
+# Could not redirect log for xmr-stak
+nohup ~/.local/bin/xmr-stak-cpu \
+  ~/.local/etc/nicehash-cryptonight \
+  1>$algorithm.log 2>&1 &

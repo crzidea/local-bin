@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
+algorithm="daggerhashimoto"
 . ~/.local/etc/nicehash
 mkdir -p ~/.nicehash
 cd ~/.nicehash
 killall ethminer
-worker=${HOSTNAME/\.*/}
 nohup ~/.local/bin/ethminer \
   --cuda \
   --farm-recheck 10000 \
   --stratum-protocol 2 \
-  --stratum daggerhashimoto.$location.nicehash.com:3353 \
+  --stratum $algorithm.$location.nicehash.com:3353 \
   --userpass $address.$worker.x \
   1>daggerhashimoto.log 2>&1 &
