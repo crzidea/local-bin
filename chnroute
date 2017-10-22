@@ -3,7 +3,7 @@
 set -e
 tmp=/tmp/chnroute.txt
 dist=$1
-#curl 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
-curl 'https://mirrors.crzidea.com/http/ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
-curl 'https://www.cloudflare.com/ips-v4' >>$tmp
-mv $tmp $dist
+curl 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
+#curl 'https://mirrors.crzidea.com/http/ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
+#curl 'https://www.cloudflare.com/ips-v4' >>$tmp
+sudo mv $tmp $dist
