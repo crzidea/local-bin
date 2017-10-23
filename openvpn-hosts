@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+sudo awk -F , '{print $2,$1}' /etc/openvpn/ipp.txt | sed "s/$/.$1/" | sudo tee /etc/openvpn/hosts
