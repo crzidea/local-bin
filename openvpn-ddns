@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Usage:
+#   openvpn-hosts crzidea.com
+. $HOME/.local/etc/ddns
+
+count=$(sudo wc -l /etc/openvpn/ipp.txt | awk '{print $1}')
+list_name=($(sudo awk -F , '{print $1}' /etc/openvpn/ipp.txt))
+list_ip=($(sudo awk -F , '{print $2}' /etc/openvpn/ipp.txt))
+for (( i = 0; i < $count; i++ )); do
+  name=${list_name[$i]}.vpc
+  ip=${list_ip[$i]}
+  data='{"type":"A","name":"${name}","content":"${ip}","ttl":120,"proxied":false}'
+  data=${data//$\{ip\}/$ip}
+  data=${data//$\{name\}/$name}
+  curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records" \
+       -H "X-Auth-Email: $auth_email" \
+       -H "X-Auth-Key: $auth_key" \
+       -H "Content-Type: application/json" \
+       --data $data
+  echo
+done
