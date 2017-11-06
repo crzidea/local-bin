@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 # Usage:
 #   count-dst '( dport = :80 )'
-ss -tun $1 | tail -n +2 | awk '{print $6}' | sort | uniq -c
+ss -tun $1 | tail -n +2 | awk '{print $6}' | awk -F ':' '{print $1}' | sort | uniq -c
