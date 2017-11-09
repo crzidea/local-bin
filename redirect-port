@@ -2,11 +2,11 @@
 # Usage:
 #   action=append
 #   action=delete
+#   protocol=udp
 #   to=8.8.8.8
 #   port=53
 
-sudo iptables --$action FORWARD -s $to -j ACCEPT
-sudo iptables --$action FORWARD -d $to -j ACCEPT
-sudo iptables -t nat --$action PREROUTING -p tcp --dport $port -j DNAT --to $to
-sudo iptables -t nat --$action PREROUTING -p udp --dport $port -j DNAT --to $to
+sudo iptables --$action FORWARD -p $protocol -s $to -j ACCEPT
+sudo iptables --$action FORWARD -p $protocol -d $to -j ACCEPT
+sudo iptables -t nat --$action PREROUTING -p $protocol --dport $port -j DNAT --to $to
 sudo iptables -t nat --$action POSTROUTING -d $to -j MASQUERADE
