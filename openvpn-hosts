@@ -1,2 +1,5 @@
 #!/usr/bin/env bash
-sudo awk -F , '{print $2,$1}' /etc/openvpn/ipp.txt | sed "s/$/.$1/" | sudo tee /etc/openvpn/hosts
+# Usage:
+#   openvpn-hosts crzidea.com
+sudo awk -F , '{print $2,$1}' /etc/openvpn/ipp.txt | sed "s/$/.vpc.$1/" | sudo tee /etc/openvpn/hosts
+sudo systemctl restart dnsmasq
