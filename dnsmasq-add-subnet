@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -ex
 ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
-echo "add-subnet=$ip/24" | sudo tee /etc/dnsmasq.d/edns.conf
+echo "add-subnet=$ip/32" | sudo tee /etc/dnsmasq.d/add-subnet.conf
