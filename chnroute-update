@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+# Usage: chnroute-update router.domain.com
+mkdir -p ~/.chnroute/old
+pushd ~/.chnroute
+chnroute chnroute.txt
+routers=$(ls old | sed 's/\.chnroute.txt//')
+domain=$1
+for router in $routers ; do
+  echo "Updating $router.$domain"
+  scp root@$router.$domain:/etc/config/chnroute.txt old/$router.chnroute.txt
+  scp chnroute.txt root@$router.$domain:/etc/config/chnroute.txt
+  ssh root@$router.$domain /etc/init.d/shadowsocks restart
+done
