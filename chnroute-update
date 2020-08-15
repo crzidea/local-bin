@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Usage: chnroute-update router.domain.com
 mkdir -p ~/.chnroute/old
-pushd ~/.chnroute
+cd ~/.chnroute
 chnroute chnroute.txt
 routers=$(ls old | sed 's/\.chnroute.txt//')
 domain=$1
