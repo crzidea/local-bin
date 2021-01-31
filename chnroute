@@ -5,8 +5,10 @@ tmp=/tmp/chnroute.txt
 dist=$1
 #curl 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
 curl 'https://mirrors.crzidea.com/http/ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$tmp
-curl 'https://download.microsoft.com/download/B/2/A/B2AB28E1-DAE1-44E8-A867-4987FE089EBE/msft-public-ips.csv' | awk -F ',' '/\./ { print $1 }' >>$tmp
+#curl 'https://download.microsoft.com/download/B/2/A/B2AB28E1-DAE1-44E8-A867-4987FE089EBE/msft-public-ips.csv' | awk -F ',' '/\./ { print $1 }' >>$tmp
 #curl 'https://www.cloudflare.com/ips-v4' >>$tmp
 # resolver1.opendns.com
 echo "208.67.222.222/32" >>$tmp
+# xsts.auth.xboxlive.com
+dig xsts.auth.xboxlive.com +short A | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
 sudo mv $tmp $dist
