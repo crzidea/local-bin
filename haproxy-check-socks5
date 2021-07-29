@@ -1,5 +1,5 @@
-#!/usr/bin/env sh
-socks5_port=$((HAPROXY_PROXY_PORT-10))
-curl --proxy socks5://$HAPROXY_PROXY_ADDR:$socks5_port -w @- -o /dev/null -s https://www.google.com <<'EOF'
-time_namelookup: %{time_namelookup}, time_connect: %{time_connect}, time_appconnect: %{time_appconnect}, time_pretransfer: %{time_pretransfer}, time_redirect: %{time_redirect}, time_starttransfer: %{time_starttransfer}, time_total: %{time_total}\n
+#!/bin/sh
+socks5_port=$(($HAPROXY_SERVER_PORT-10))
+exec /usr/bin/curl --proxy socks5://$HAPROXY_SERVER_ADDR:$socks5_port -w @- -o /dev/null -s https://www.google.com <<EOF
+checking $HAPROXY_SERVER_ADDR:$HAPROXY_SERVER_PORT, time_namelookup: %{time_namelookup}, time_connect: %{time_connect}, time_appconnect: %{time_appconnect}, time_pretransfer: %{time_pretransfer}, time_redirect: %{time_redirect}, time_starttransfer: %{time_starttransfer}, time_total: %{time_total}\n
 EOF
