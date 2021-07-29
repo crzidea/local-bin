@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+name=`basename $PWD`
+docker stack deploy --compose-file ./docker-stack.yml --prune --resolve-image changed $name
