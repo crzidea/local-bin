@@ -16,7 +16,7 @@ if [[ $? -ne 0 ]]; then
   sudo apt install -y dnsutils
 fi
 
-set -e
+set -xe
 
 #ip=$(curl -s https://api.ipify.org)
 ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
