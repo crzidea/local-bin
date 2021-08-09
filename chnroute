@@ -12,6 +12,7 @@ curl 'https://ip-history.crzidea.workers.dev/?name=resolver1.opendns.com' | grep
 curl 'https://ip-history.crzidea.workers.dev/?name=resolver2.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
 curl 'https://ip-history.crzidea.workers.dev/?name=resolver3.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
 curl 'https://ip-history.crzidea.workers.dev/?name=resolver4.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
-# xsts.auth.xboxlive.com
+# xboxlive
 curl 'https://ip-history.crzidea.workers.dev/?name=xsts.auth.xboxlive.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=xccs.xboxlive.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
 sudo mv $tmp $dist
