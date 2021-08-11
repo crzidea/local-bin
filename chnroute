@@ -8,11 +8,13 @@ curl 'https://mirrors.crzidea.com/http/ftp.apnic.net/apnic/stats/apnic/delegated
 #curl 'https://download.microsoft.com/download/B/2/A/B2AB28E1-DAE1-44E8-A867-4987FE089EBE/msft-public-ips.csv' | awk -F ',' '/\./ { print $1 }' >>$tmp
 #curl 'https://www.cloudflare.com/ips-v4' >>$tmp
 # resolver1.opendns.com
-curl 'https://ip-history.crzidea.workers.dev/?name=resolver1.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
-curl 'https://ip-history.crzidea.workers.dev/?name=resolver2.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
-curl 'https://ip-history.crzidea.workers.dev/?name=resolver3.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
-curl 'https://ip-history.crzidea.workers.dev/?name=resolver4.opendns.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=resolver1.opendns.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=resolver2.opendns.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=resolver3.opendns.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=resolver4.opendns.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
 # xboxlive
-curl 'https://ip-history.crzidea.workers.dev/?name=xsts.auth.xboxlive.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
-curl 'https://ip-history.crzidea.workers.dev/?name=xccs.xboxlive.com' | grep -v '\.$' | sed 's/$/\/32/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=xsts.auth.xboxlive.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=xccs.xboxlive.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=userpresence.xboxlive.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
+curl 'https://ip-history.crzidea.workers.dev/?name=uks.gssv-play-prodxhome.xboxlive.com' | grep -v '\.$' | sed 's/$/\/24/g' >>$tmp
 sudo mv $tmp $dist
