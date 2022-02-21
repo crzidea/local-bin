@@ -10,5 +10,6 @@ journalctl --vacuum-size=100000000
 sudo journalctl --vacuum-size=100000000
 sudo rm /var/log/*.log.*.gz
 sudo apt autoremove
+npm cache clean --force
 
 df -h
