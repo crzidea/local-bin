@@ -9,7 +9,7 @@ total=$(wc -l $filename | awk '{print $1}')
 end=$((start+length+2))
 echo Total lines: $total
 if [[ "$end" -gt "$total" ]]; then
-  tail -n $((total-start-2)) $filename >>$chunk
+  head -n $end $filename | tail -n $((total-start-2)) >>$chunk
   echo End
 else
   head -n $end $filename | tail -n $length >>$chunk
