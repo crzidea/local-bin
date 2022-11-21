@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+start="${start:-0}"
+length="${length:-100000}"
+filename="${filename:-netlog.json}"
+
+chunk="chunk.$filename"
+head -n 2 $filename >$chunk
+total=$(wc -l $filename | awk '{print $1}')
+end=$((start+length+2))
+echo Total lines: $total
+if [[ "$end" -gt "$total" ]]; then
+  head -n $end $filename | tail -n $((total-start-2)) >>$chunk
+  echo End
+else
+  head -n $end $filename | tail -n $length >>$chunk
+  echo Next loop: start=$((start+length))
+fi
