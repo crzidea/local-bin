@@ -1,6 +1,10 @@
 #!/bin/sh
-socks5_port=$(($HAPROXY_SERVER_PORT-10))
-check_url="https://status.playstation.com/data/statuses/region/SCEJA.json"
-exec /usr/bin/curl --silent --proxy socks5h://$HAPROXY_SERVER_ADDR:$socks5_port --write-out @- --output /dev/null --max-time 1 $check_url <<EOF
+socks5_port=$(echo $HAPROXY_SERVER_NAME | sed 's/.*_check_//')
+if ! [[ $socks5_port =~ '^[0-9]+$' ]]; then
+  socks5_port=$(($HAPROXY_SERVER_PORT-10))
+fi
+#check_url="https://status.playstation.com/data/statuses/region/SCEJA.json"
+check_url="https://8.8.8.8/resolve?name=google.com&type=A"
+exec /usr/bin/curl --silent --proxy socks5h://127.0.0.1:$socks5_port --write-out @- --output /dev/null --max-time 1 $check_url <<EOF
 check $HAPROXY_SERVER_ADDR:$HAPROXY_SERVER_PORT, time_namelookup: %{time_namelookup}, time_connect: %{time_connect}, time_appconnect: %{time_appconnect}, time_pretransfer: %{time_pretransfer}, time_redirect: %{time_redirect}, time_starttransfer: %{time_starttransfer}, time_total: %{time_total}\n
 EOF
