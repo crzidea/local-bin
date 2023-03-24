@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 set -ex
-ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
-echo "add-subnet=$ip/32" | sudo tee /etc/dnsmasq.d/add-subnet.conf
+#ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
+ip=$(curl https://api-v3.speedtest.cn/ip | sed 's/.*\"ip\"\:\"//' | sed 's/\".*//')
+echo "add-subnet=$ip/32" | tee /etc/dnsmasq.d/add-subnet.conf
