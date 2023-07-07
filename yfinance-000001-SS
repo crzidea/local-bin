@@ -1,4 +1,0 @@
-#!/usr/bin/env python3
-import yfinance as yf
-data = yf.download("000001.SS", period="1y", progress=False)
-print(data.to_csv())
