@@ -7,7 +7,7 @@ routers=$(ls old | sed 's/\.chnroute.txt//')
 domain=$1
 for router in $routers ; do
   echo "Updating $router.$domain"
-  scp root@$router.$domain:/etc/config/chnroute.txt old/$router.chnroute.txt
-  scp chnroute.txt root@$router.$domain:/etc/config/chnroute.txt
+  scp -O root@$router.$domain:/etc/config/chnroute.txt old/$router.chnroute.txt
+  scp -O chnroute.txt root@$router.$domain:/etc/config/chnroute.txt
   ssh root@$router.$domain /etc/init.d/shadowsocks-libev restart
 done
