@@ -8,8 +8,9 @@
 set -e
 workdir=$PWD
 ca_dir="$HOME/.ca"
+hostname=`cat /etc/hostname`
 
-if [[ -d $ca_dir ]]; then
+if [ -d $ca_dir ]; then
   echo $ca_dir exists
   >$ca_dir/index.txt
 else
@@ -18,16 +19,23 @@ else
   mkdir -p newcerts private
   touch index.txt
   echo 00 >serial
+
+  # https://android.stackexchange.com/questions/237141/how-to-get-android-11-to-trust-a-user-root-ca-without-a-private-key
+  echo 'basicConstraints=CA:true' > android_options.txt
+
   openssl genrsa -out private/cakey.pem 2048
   openssl req \
     -new -sha256 \
     -key private/cakey.pem \
-    -subj "/CN=${USER}@${HOSTNAME} Root CA" \
+    -subj "/CN=${USER}@${hostname} Root CA" \
     -out cacsr.pem
+
+  # https://apple.stackexchange.com/questions/371725/why-does-ios-13-not-trust-my-own-root-ca
   openssl x509 -req \
     -in cacsr.pem \
     -signkey private/cakey.pem \
-    -days 3650 \
+    -days 825 \
+    -extfile android_options.txt \
     -out cacert.pem
 fi
 
@@ -36,4 +44,10 @@ mkdir -p $workdir/$common_name
 cd $workdir/$common_name
 openssl genrsa -out key.pem 2048
 openssl req -new -sha256 -key key.pem -out csr.pem -subj "/CN=${common_name}"
-openssl ca -batch -config $HOME/.openssl.cnf -in csr.pem -out ./cert.pem
+
+# https://stackoverflow.com/questions/43665243/invalid-self-signed-ssl-cert-subject-alternative-name-missing
+SAN=DNS:$common_name,DNS:*.$common_name openssl ca -batch \
+  -config $HOME/.openssl.cnf \
+  -in csr.pem \
+  -out ./cert.pem \
+	-extensions san_env
