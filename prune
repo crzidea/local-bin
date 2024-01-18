@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+sudo swapoff -a
+ulimit -n 65535
 docker container prune -f
 docker image prune -f
 docker volume prune -f
