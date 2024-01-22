@@ -6,12 +6,14 @@ docker image prune -f
 docker volume prune -f
 docker network prune -f
 docker ps -aq | xargs docker inspect --format='{{.LogPath}}' | xargs sudo truncate -s 0
+sudo apt update
+sudo apt upgrade -y
+sudo apt autoremove
 #journalctl --vacuum-size=100m
 journalctl --vacuum-size=100000000
 #sudo journalctl --vacuum-size=100m
 sudo journalctl --vacuum-size=100000000
 sudo rm /var/log/*.log.*.gz
-sudo apt autoremove
 npm cache clean --force
 
 df -h
