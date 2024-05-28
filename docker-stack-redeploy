@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+service=$(basename $PWD)
+docker stack rm shadowsocks && docker stack deploy --compose-file ./docker-compose.yml $service
