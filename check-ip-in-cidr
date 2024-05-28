@@ -1,0 +1,34 @@
+#!/usr/bin/python3
+import sys
+import ipaddress
+
+def ip_in_cidr(ip_address, cidr_list):
+    ip = ipaddress.ip_address(ip_address)
+    for cidr in cidr_list:
+        if ip in ipaddress.ip_network(cidr):
+            return cidr
+    return False
+
+def main(cidr_file, ip_list):
+    # Read CIDR list from file
+    with open(cidr_file, "r") as f:
+        cidr_list = [line.strip() for line in f.readlines()]
+
+    # Check each IP in the list
+    for ip_to_check in ip_list:
+        result = ip_in_cidr(ip_to_check, cidr_list)
+        if result:
+        	print(f"{ip_to_check} is in {result}")
+        else:
+        	print(f"{ip_to_check} is not in any of the CIDR ranges.")
+
+if __name__ == "__main__":
+    # Check if correct number of arguments is provided
+    command_name = sys.argv[0]
+    if len(sys.argv) < 3:
+        print(f"Usage: {command_name} <cidr_file> <ip1> <ip2> ...")
+        sys.exit(1)
+
+    cidr_file = sys.argv[1]
+    ip_list = sys.argv[2:]
+    main(cidr_file, ip_list)
