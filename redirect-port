@@ -4,9 +4,23 @@
 #   action=delete
 #   protocol=udp
 #   to=8.8.8.8
+#   to=2001:4860:4860::8888
 #   port=53
+#   port=3075:3094,3478:3578
+#set -ex
 
-sudo iptables --$action FORWARD -p $protocol -s $to -j ACCEPT
-sudo iptables --$action FORWARD -p $protocol -d $to -j ACCEPT
-sudo iptables -t nat --$action PREROUTING -p $protocol --dport $port -j DNAT --to $to
-sudo iptables -t nat --$action POSTROUTING -d $to -j MASQUERADE
+if echo "$to" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+    sudo sysctl net.ipv4.conf.all.forwarding=1
+		iptables_command=iptables
+elif echo "$to" | grep -qE '^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$'; then
+    sudo sysctl net.ipv6.conf.all.forwarding=1
+		iptables_command=ip6tables
+else
+    echo "Invalid IP"
+		exit
+fi
+
+sudo $iptables_command --$action FORWARD -p $protocol -s $to -j ACCEPT
+sudo $iptables_command --$action FORWARD -p $protocol -d $to -j ACCEPT
+sudo $iptables_command -t nat --$action PREROUTING -p $protocol -m multiport --dport $port -j DNAT --to $to
+sudo $iptables_command -t nat --$action POSTROUTING -d $to -j MASQUERADE
