@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+import re
+import sys
+import argparse
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Filter nf_conntrack data based on dport and outbound bytes.")
+default_dport_list = [53, 80, 443, 8080, 1900, 28443]
+parser.add_argument(
+    "--dport-list",
+    type=int,
+    nargs="+",
+    default=default_dport_list,
+    help=f"List of dports to filter out (default: {default_dport_list})"
+)
+default_min_out_bytes = 1000
+parser.add_argument(
+    "--min-out-bytes",
+    type=int,
+    default=default_min_out_bytes,
+    help=f"Minimum outbound bytes to filter connections (default: {default_min_out_bytes})"
+)
+args = parser.parse_args()
+
+# Function to parse the nf_conntrack lines
+def parse_conntrack_line(line):
+    fields = re.findall(r"(\w+)=([\w.:]+)", line)
+    conn_data = {}
+    out_dport = None
+    out_bytes, in_bytes = None, None
+
+    # Iterate over fields and populate conn_data dictionary
+    for i, (k, v) in enumerate(fields):
+        if k == "dport" and out_dport is None:
+            # Capture the out dport value
+            out_dport = int(v)
+        if k == "bytes":
+            # Assign outbound bytes (first occurrence) and inbound bytes (second occurrence)
+            if out_bytes is None:
+                out_bytes = int(v)
+            else:
+                in_bytes = int(v)
+        conn_data[k] = v
+
+    # Add specific fields
+    conn_data['out_dport'] = out_dport
+    conn_data['out_bytes'] = out_bytes
+    conn_data['in_bytes'] = in_bytes
+    return conn_data
+
+# Process each line from stdin in a streaming fashion
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue  # Skip empty lines
+
+    conn = parse_conntrack_line(line)
+    # Skip lines with the out dport
+    if conn['out_dport'] in args.dport_list:
+        continue
+
+    # Filter connections with out_bytes > 1000 and out_bytes > in_bytes
+    if conn['out_bytes'] > args.min_out_bytes and conn['out_bytes'] > conn['in_bytes']:
+        print(line)  # Print the original line if it matches the criteria
