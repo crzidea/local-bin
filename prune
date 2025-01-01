@@ -15,6 +15,7 @@ journalctl --vacuum-size=100000000
 sudo journalctl --vacuum-size=100000000
 sudo rm /var/log/*.log.*.gz
 sudo apt autoremove -y
+sudo rm /var/lib/cloudflare-warp/crash_reports/*
 npm cache clean --force
 
 df -h
