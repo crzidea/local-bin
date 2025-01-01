@@ -1,5 +1,5 @@
-#!/bin/sh
-socks5_port=$(echo $HAPROXY_SERVER_NAME | sed 's/.*_check_//')
+#!/bin/bash
+socks5_port=$(echo $HAPROXY_SERVER_NAME | /bin/sed 's/.*_check_//')
 if ! [[ $socks5_port =~ '^[0-9]+$' ]]; then
   socks5_port=$(($HAPROXY_SERVER_PORT-10))
 fi
