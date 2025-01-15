@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-sudo swapoff -a
-sudo rm /swapfile
+#sudo swapoff -a
+#sudo rm /swapfile
 ulimit -n 65535
 docker system prune -f
 docker container prune -f
