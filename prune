@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+df -h
+
 sudo swapoff -a
 sudo rm /swapfile
 ulimit -n 65535
