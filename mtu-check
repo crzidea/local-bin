@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Target IP address or hostname
+TARGET=$1
+
+# Initial values
+MIN_MTU=1200
+MAX_MTU=1500
+STEP=10
+SUCCESSFUL_MTU=0
+
+# Function to perform ping test
+check_mtu() {
+  local size=$1
+  if ping -c 1 -s $size -M do $TARGET &> /dev/null; then
+    echo "MTU $((size + 28)) is successful"
+    SUCCESSFUL_MTU=$((size + 28))
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Start with a binary search-like approach
+while ((MIN_MTU <= MAX_MTU)); do
+  MID_MTU=$(( (MIN_MTU + MAX_MTU) / 2 ))
+  echo $MID_MTU
+  if check_mtu $MID_MTU; then
+    MIN_MTU=$((MID_MTU + 1))
+  else
+    MAX_MTU=$((MID_MTU - 1))
+  fi
+done
+
+echo "Optimal MTU: $SUCCESSFUL_MTU"
+
+# Further narrow down to the exact MTU by stepping through remaining range
+for ((size=SUCCESSFUL_MTU-28; size<=$SUCCESSFUL_MTU-1; size++)); do
+  if check_mtu $size; then
+    SUCCESSFUL_MTU=$((size + 28))
+  else
+    break
+  fi
+done
+
+echo "Detected MTU is: $SUCCESSFUL_MTU"
