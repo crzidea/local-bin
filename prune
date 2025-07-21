@@ -24,3 +24,7 @@ sudo rm /var/lib/cloudflare-warp/crash_reports/*
 npm cache clean --force
 
 df -h
+
+# Reconnect warp
+warp-cli disconnect
+warp-cli connect
