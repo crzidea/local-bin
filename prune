@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+cd "$(dirname "$0")"
+git pull
 df -h
 
 sudo swapoff -a
@@ -11,10 +13,12 @@ docker volume prune -f
 docker network prune -f
 docker ps -aq | xargs docker inspect --format='{{.LogPath}}' | xargs sudo truncate -s 0
 sudo systemctl stop docker
+sudo systemctl stop warp-svc
 sudo apt autoremove -y
 sudo apt update
 sudo apt upgrade -y
 sudo systemctl start docker
+sudo systemctl start warp-svc
 #journalctl --vacuum-size=100m
 journalctl --vacuum-size=100000000
 #sudo journalctl --vacuum-size=100m
