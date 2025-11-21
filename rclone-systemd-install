@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -e
+
+TEMPLATE_FILE="$(dirname "$0")/systemd/rclone-mount@.service.tpl"
+DEST_FILE="/etc/systemd/system/rclone-mount@.service"
+REMOTE_NAME=$1
+
+if [ ! -f "$TEMPLATE_FILE" ]; then
+    echo "Error: $TEMPLATE_FILE not found."
+    exit 1
+fi
+
+# Get username and group name
+CURRENT_USER=$(whoami)
+CURRENT_GROUP=$(id -gn "$CURRENT_USER")
+
+echo "Installing rclone-mount@.service for user $CURRENT_USER (group $CURRENT_GROUP)..."
+
+# Replace placeholders and install
+sudo sed -e "s/__USER__/$CURRENT_USER/g" -e "s/__GROUP__/$CURRENT_GROUP/g" "$TEMPLATE_FILE" | sudo tee "$DEST_FILE" > /dev/null
+
+sudo systemctl daemon-reload
+echo "Service file installed at $DEST_FILE"
+echo ""
+
+if [ -n "$REMOTE_NAME" ]; then
+    echo "Setting up mount point /mnt/$REMOTE_NAME..."
+    sudo mkdir -p "/mnt/$REMOTE_NAME"
+    sudo chown "$CURRENT_USER:$CURRENT_GROUP" "/mnt/$REMOTE_NAME"
+    echo "Enabling and starting the service for $REMOTE_NAME..."
+    sudo systemctl enable --now "rclone-mount@$REMOTE_NAME.service"
+    echo "You can check the status with:"
+    echo "systemctl status rclone-mount@$REMOTE_NAME.service"
+else
+    echo "To use this service, run this script with the remote name as an argument:"
+    echo "  $0 <remote_name>"
+    echo ""
+    echo "Or, you can do it manually:"
+    echo "1. Create a mount point, e.g., for a remote named 'myremote':"
+    echo "   sudo mkdir -p /mnt/myremote"
+    echo "   sudo chown $CURRENT_USER:$CURRENT_GROUP /mnt/myremote"
+    echo "2. Enable and start the service:"
+    echo "   sudo systemctl enable --now rclone-mount@myremote.service"
+    echo "3. To check the status:"
+    echo "   systemctl status rclone-mount@myremote.service"
+fi
