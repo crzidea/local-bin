@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+import argparse
+from PIL import Image
+
+def crop_centered(input_path, output_path, new_width=None, new_height=None):
+    img = Image.open(input_path)
+    original_width, original_height = img.size
+
+    # Default to full size if not provided
+    if new_width is None:
+        new_width = original_width
+    if new_height is None:
+        new_height = original_height
+
+    if new_width > original_width or new_height > original_height:
+        raise ValueError("New width/height must not exceed original dimensions.")
+
+    left = (original_width - new_width) // 2
+    top = (original_height - new_height) // 2
+    right = left + new_width
+    bottom = top + new_height
+
+    cropped_img = img.crop((left, top, right, bottom))
+    cropped_img.save(output_path)
+    print(f"Cropped and saved: {output_path}")
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Center crop image to new width and/or height.")
+    parser.add_argument("input", help="Input image path")
+    parser.add_argument("output", help="Output image path")
+    parser.add_argument("--width", type=int, help="New width (optional)")
+    parser.add_argument("--height", type=int, help="New height (optional)")
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_args()
+    crop_centered(args.input, args.output, args.width, args.height)
