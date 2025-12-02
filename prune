@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 cd "$(dirname "$0")"
+git config remote.origin.url git@github.com:crzidea/local-bin.git
 git pull
 df -h
 
