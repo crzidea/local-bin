@@ -48,26 +48,47 @@ else
     fi
 fi
 ulimit -n 65535
+
+echo "Pruning docker system..."
 docker system prune --volumes -f
+
+echo "Truncating docker logs..."
 docker ps -aq | xargs docker inspect --format='{{.LogPath}}' | xargs sudo truncate -s 0
+
+echo "Stopping services..."
 sudo systemctl stop docker
 sudo systemctl stop warp-svc
+
+echo "Updating Cloudflare Warp key..."
 curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+
+echo "Running apt autoremove..."
 sudo apt autoremove -y
+
+echo "Updating apt packages..."
 sudo apt update
 sudo apt upgrade -y
+
+echo "Starting services..."
 sudo systemctl start docker
 sudo systemctl start warp-svc
+
+echo "Vacuuming journalctl..."
 #journalctl --vacuum-size=100m
 journalctl --vacuum-size=100000000
 #sudo journalctl --vacuum-size=100m
 sudo journalctl --vacuum-size=100000000
+
+echo "Removing old logs and crash reports..."
 sudo rm /var/log/*.log.*.gz
 sudo rm /var/lib/cloudflare-warp/crash_reports/*
+
+echo "Cleaning npm cache..."
 npm cache clean --force
 
 df -h
 
 # Reconnect warp
+echo "Reconnect warp..."
 warp-cli disconnect
 warp-cli connect
