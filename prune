@@ -89,6 +89,6 @@ npm cache clean --force
 df -h
 
 # Reconnect warp
-echo "Reconnect warp..."
-warp-cli disconnect
-warp-cli connect
+# echo "Reconnect warp..."
+# warp-cli disconnect
+# warp-cli connect
