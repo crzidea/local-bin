@@ -18,7 +18,11 @@ if [ "$total_mem" -lt 512 ]; then
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
     fi
-    sudo swapon /swapfile
+    if ! sudo swapon --show | grep -q "/swapfile"; then
+        sudo swapon /swapfile
+    else
+        echo "Swap is already active."
+    fi
 else
     echo "Memory is sufficient ($total_mem MB). Turning off swap."
     sudo swapoff -a
