@@ -1,10 +1,27 @@
 #!/usr/bin/env bash
-cd ~/.confbook
-git config remote.origin.url https://github.com/crzidea/confbook.git
-git pull
-cd "$(dirname "$0")"
-git config remote.origin.url https://github.com/crzidea/local-bin.git
-git pull
+
+function update_repo() {
+    local dir="$1"
+    local remote_url="$2"
+    
+    echo "Checking updates for $(basename "$dir")..."
+    cd "$dir" || return
+    [ -n "$remote_url" ] && git config remote.origin.url "$remote_url"
+    
+    local current_hash
+    current_hash=$(git rev-parse HEAD)
+    
+    git pull
+    
+    if [ "$(git rev-parse HEAD)" != "$current_hash" ]; then
+        echo "Updates detected in $(basename "$dir"). Restarting script..."
+        exec "$0" "$@"
+    fi
+}
+
+update_repo ~/.confbook "https://github.com/crzidea/confbook.git"
+update_repo "$(dirname "$0")" "https://github.com/crzidea/local-bin.git"
+
 df -h
 
 # Check total physical memory in MB
