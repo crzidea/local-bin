@@ -1,11 +1,31 @@
 #!/usr/bin/env bash
+cd ~/.confbook
+git config remote.origin.url https://github.com/crzidea/confbook.git
+git pull
 cd "$(dirname "$0")"
 git config remote.origin.url https://github.com/crzidea/local-bin.git
 git pull
 df -h
 
-sudo swapoff -a
-sudo rm /swapfile
+# Check total physical memory in MB
+total_mem=$(free -m | awk '/^Mem:/{print $2}')
+
+if [ "$total_mem" -lt 512 ]; then
+    echo "Memory is less than 512MB ($total_mem MB). Ensuring swap is on."
+    if [ ! -f /swapfile ]; then
+        echo "Creating /swapfile..."
+        sudo fallocate -l 512M /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=512
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+    fi
+    sudo swapon /swapfile
+else
+    echo "Memory is sufficient ($total_mem MB). Turning off swap."
+    sudo swapoff -a
+    if [ -f /swapfile ]; then
+        sudo rm /swapfile
+    fi
+fi
 ulimit -n 65535
 docker system prune -f
 docker container prune -f
