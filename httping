@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+
+import argparse
+import time
+import sys
+import signal
+import statistics
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+from urllib.parse import urlparse
+
+# Global stats for summary
+stats = {
+    'sent': 0,
+    'received': 0,
+    'rtts': []
+}
+
+def signal_handler(sig, frame):
+    print_summary()
+    sys.exit(0)
+
+class RequestTimeout(Exception):
+    pass
+
+def timeout_handler(signum, frame):
+    raise RequestTimeout("Request timed out")
+
+def print_summary():
+    print(f"\n--- {args.url} httping statistics ---")
+    loss = 0
+    if stats['sent'] > 0:
+        loss = (stats['sent'] - stats['received']) / stats['sent'] * 100
+    
+    print(f"{stats['sent']} requests transmitted, {stats['received']} received, {loss:.1f}% loss")
+    
+    if stats['rtts']:
+        min_rtt = min(stats['rtts'])
+        avg_rtt = statistics.mean(stats['rtts'])
+        max_rtt = max(stats['rtts'])
+        stddev_rtt = statistics.stdev(stats['rtts']) if len(stats['rtts']) > 1 else 0.0
+        print(f"rtt min/avg/max/mdev = {min_rtt:.3f}/{avg_rtt:.3f}/{max_rtt:.3f}/{stddev_rtt:.3f} ms")
+
+def parse_trace(content):
+    data = {}
+    try:
+        lines = content.decode('utf-8').splitlines()
+        for line in lines:
+            if '=' in line:
+                key, value = line.split('=', 1)
+                data[key.strip()] = value.strip()
+    except Exception:
+        pass
+    return data
+
+def main():
+    global args
+    parser = argparse.ArgumentParser(description='Ping-like tool for HTTP requests')
+    parser.add_argument('url', help='Target URL')
+    parser.add_argument('-c', '--count', type=int, default=float('inf'), help='Number of requests to send')
+    parser.add_argument('-i', '--interval', type=float, default=1.0, help='Interval between requests in seconds')
+    parser.add_argument('-W', '--timeout', type=float, default=2.0, help='Time in seconds to wait for a reply (default: 2.0)')
+    
+    args = parser.parse_args()
+    
+    # Auto-prepend http:// if missing
+    if not args.url.startswith(('http://', 'https://')):
+        args.url = 'http://' + args.url
+        
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    
+    print(f"HTTPING {args.url}")
+    
+    parsed_url = urlparse(args.url)
+    is_trace = parsed_url.path == '/cdn-cgi/trace'
+    
+    seq = 0
+    try:
+        while seq < args.count:
+            seq += 1
+            stats['sent'] += 1
+            
+            start_time = time.time()
+            try:
+                signal.setitimer(signal.ITIMER_REAL, args.timeout)
+                req = Request(args.url)
+                # Ensure we accept everything to mimic a standard browser/client slightly better, 
+                # mainly to avoid getting blocked by some basic filters if possible, 
+                # though urllib default user-agent is usually fine for basic checks.
+                with urlopen(req, timeout=args.timeout) as response:
+                    connected_to = args.url
+                    try:
+                         # Attempt to get the IP address from the underlying socket
+                         # Must be done before reading content as fp might be closed/cleared
+                         if hasattr(response.fp, 'raw'):
+                             ip_addr = response.fp.raw._sock.getpeername()[0]
+                             connected_to = ip_addr
+                         elif hasattr(response, 'fp') and hasattr(response.fp, '_sock'):
+                             # Fallback for some other structures
+                             ip_addr = response.fp._sock.getpeername()[0]
+                             connected_to = ip_addr
+                    except Exception:
+                         pass
+
+                    content = response.read()
+                    status_code = response.getcode()
+                    
+                    # Disable alarm immediately after read successfully
+                    signal.setitimer(signal.ITIMER_REAL, 0)
+                    
+                    end_time = time.time()
+                    duration_ms = (end_time - start_time) * 1000
+                    stats['received'] += 1
+                    stats['rtts'].append(duration_ms)
+                    
+                    extra_info = ""
+                    if is_trace:
+                        trace_data = parse_trace(content)
+                        ip = trace_data.get('ip', 'N/A')
+                        colo = trace_data.get('colo', 'N/A')
+                        extra_info = f" ip={ip} colo={colo}"
+                        
+                    print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={status_code}{extra_info}")
+                    
+            except RequestTimeout:
+                 print(f"Request timeout for {args.url}: seq={seq}")
+            except HTTPError as e:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                end_time = time.time()
+                duration_ms = (end_time - start_time) * 1000
+                print(f"connected to {args.url}: seq={seq} time={duration_ms:.2f} ms status={e.code}")
+            except URLError as e:
+                 signal.setitimer(signal.ITIMER_REAL, 0)
+                 print(f"failed to connect to {args.url}: seq={seq} reason={e.reason}")
+            except Exception as e:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                print(f"error: {e}")
+
+            if seq < args.count:
+                time.sleep(args.interval)
+                
+    except KeyboardInterrupt:
+        # Handled by signal_handler, but just in case loop exits some other way
+        pass
+        
+    print_summary()
+
+if __name__ == "__main__":
+    main()
