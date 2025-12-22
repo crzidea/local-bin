@@ -27,11 +27,16 @@ df -h
 # Check total physical memory in MB
 total_mem=$(free -m | awk '/^Mem:/{print $2}')
 
-if [ "$total_mem" -lt 512 ]; then
-    echo "Memory is less than 512MB ($total_mem MB). Ensuring swap is on."
+# Minimum memory threshold in MB
+MIN_MEM=1024
+# Swap size in MB
+SWAP_SIZE=512
+
+if [ "$total_mem" -lt "$MIN_MEM" ]; then
+    echo "Memory is less than ${MIN_MEM}MB ($total_mem MB). Ensuring swap is on."
     if [ ! -f /swapfile ]; then
         echo "Creating /swapfile..."
-        sudo fallocate -l 512M /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=512
+        sudo fallocate -l "${SWAP_SIZE}M" /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count="$SWAP_SIZE"
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
     fi
