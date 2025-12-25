@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Install dependencies
+sudo apt install python3-venv python3-pip
+
+# Create venv
+python3 -m venv ~/.venv
+
+echo "To activate the venv, run: source ~/.venv/bin/activate"
