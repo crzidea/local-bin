@@ -92,8 +92,128 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGALRM, timeout_handler)
     
+    if args.http3:
+        if not HAS_AIOQUIC:
+            print("Error: --http3 requires 'aioquic' library.")
+            print("Please install it using: pip install aioquic")
+            sys.exit(1)
+        
+        try:
+            asyncio.run(run_http3_session(args))
+        except KeyboardInterrupt:
+            pass
+    else:
+        run_http1_session(args)
+        
+    print_summary()
+
+async def run_http3_session(args):
+    # Local imports to avoid global requirement
+    from aioquic.asyncio.protocol import QuicConnectionProtocol
+    
+    class H3ResponseInfo:
+         def __init__(self):
+             self.headers = []
+             self.content = b""
+             self.status_code = 0
+             self.done = asyncio.Event()
+
+    class H3ClientProtocol(QuicConnectionProtocol):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._h3 = H3Connection(self._quic)
+            self.req_events = {} # Map flow_id or similar if needed, but for sequential we can simplify
+
+        def quic_event_received(self, event):
+            # Pass event to H3 connection
+            for h3_event in self._h3.handle_event(event):
+                # We need to find which request this belongs to if we were concurrent.
+                # Since we are sequential/ping-like, we can use a single active request context 
+                # or just fire events.
+                if isinstance(h3_event, HeadersReceived):
+                    # We assume single stream active for simple ping
+                    if hasattr(self, 'current_resp'):
+                        for h, v in h3_event.headers:
+                             if h == b":status":
+                                 self.current_resp.status_code = int(v.decode())
+                        self.current_resp.headers = h3_event.headers
+                elif isinstance(h3_event, DataReceived):
+                    if hasattr(self, 'current_resp'):
+                        self.current_resp.content += h3_event.data
+                
+                if isinstance(h3_event, (DataReceived, HeadersReceived)) and h3_event.stream_ended:
+                    if hasattr(self, 'current_resp'):
+                        self.current_resp.done.set()
+
+    parsed = urlparse(args.url)
+    host = parsed.hostname
+    port = parsed.port or 443
+    path = parsed.path or "/"
+
+    configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
+    configuration.verify_mode = 0 # Disable SSL verification
+    
+    # We need to handle IP resolution manually if we want to print connected IP like requests does,
+    # but aioquic connect takes host/port.
+    
     print(f"HTTPING {args.url}")
     
+    seq = 0
+    try:
+        async with connect(host, port, configuration=configuration, create_protocol=H3ClientProtocol) as protocol:
+             while seq < args.count:
+                seq += 1
+                stats['sent'] += 1
+                start_time = time.time()
+                
+                # Setup response object for this request
+                resp_info = H3ResponseInfo()
+                protocol.current_resp = resp_info # Attach to protocol so callbacks find it
+                
+                stream_id = protocol._quic.get_next_available_stream_id()
+                protocol._h3.send_headers(
+                    stream_id=stream_id,
+                    headers=[
+                        (b":method", b"GET"),
+                        (b":scheme", b"https"),
+                        (b":authority", host.encode()),
+                        (b":path", path.encode()),
+                        (b"user-agent", b"httping/0.1"),
+                    ],
+                    end_stream=True
+                )
+                protocol.transmit()
+
+                try:
+                    await asyncio.wait_for(resp_info.done.wait(), timeout=args.timeout)
+                    
+                    end_time = time.time()
+                    duration_ms = (end_time - start_time) * 1000
+                    stats['received'] += 1
+                    stats['rtts'].append(duration_ms)
+                    
+                    extra_info = ""
+                    is_trace = parsed.path == '/cdn-cgi/trace'
+                    if is_trace:
+                        trace_data = parse_trace(resp_info.content)
+                        ip = trace_data.get('ip', 'N/A')
+                        colo = trace_data.get('colo', 'N/A')
+                        extra_info = f" ip={ip} colo={colo}"
+                    
+                    print(f"connected to {args.url}: seq={seq} time={duration_ms:.2f} ms status={resp_info.status_code}{extra_info}")
+
+                except asyncio.TimeoutError:
+                     print(f"Request timeout for {args.url}: seq={seq}")
+                except Exception as e:
+                     print(f"error: {e}")
+
+                if seq < args.count:
+                    await asyncio.sleep(args.interval)
+                    
+    except Exception as e:
+        print(f"Connection error: {e}")
+
+def run_http1_session(args):
     parsed_url = urlparse(args.url)
     is_trace = parsed_url.path == '/cdn-cgi/trace'
     
@@ -105,91 +225,32 @@ def main():
             
             start_time = time.time()
             try:
-                if args.http3:
-                    if not HAS_AIOQUIC:
-                        print("Error: --http3 requires 'aioquic' library.")
-                        print("Please install it using: pip install aioquic")
-                        sys.exit(1)
-                    
-                    # We define the async function LOCALLY here to access everything easily and keep it self contained
-                    # This avoids global scope pollution with async objects until needed.
-                    async def perform_h3():
-                        from aioquic.asyncio.protocol import QuicConnectionProtocol
-                        
-                        class H3ResponseInfo:
-                             def __init__(self):
-                                 self.headers = []
-                                 self.content = b""
-                                 self.status_code = 0
-                                 self.done = asyncio.Event()
-
-                        resp_info = H3ResponseInfo()
-
-                        class H3ClientProtocol(QuicConnectionProtocol):
-                            def __init__(self, *args, **kwargs):
-                                super().__init__(*args, **kwargs)
-                                self._h3 = H3Connection(self._quic)
-
-                            def quic_event_received(self, event):
-                                for h3_event in self._h3.handle_event(event):
-                                    if isinstance(h3_event, HeadersReceived):
-                                        for h, v in h3_event.headers:
-                                             if h == b":status":
-                                                 resp_info.status_code = int(v.decode())
-                                        resp_info.headers = h3_event.headers
-                                    elif isinstance(h3_event, DataReceived):
-                                        resp_info.content += h3_event.data
-                                    
-                                    # Check if stream is done
-                                    # Note: aioquic H3 events don't explicitly explicitly say "Response Complete" easily 
-                                    # unless stream_ended is true in DataReceived or HeadersReceived.
-                                    if isinstance(h3_event, (DataReceived, HeadersReceived)) and h3_event.stream_ended:
-                                        resp_info.done.set()
-
-                        parsed = urlparse(args.url)
-                        host = parsed.hostname
-                        port = parsed.port or 443
-                        path = parsed.path or "/"
-
-                        configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
-                        configuration.verify_mode = 0 # Disable SSL verification for simplicity/compatibility as per httping vibes
-
-                        async with connect(host, port, configuration=configuration, create_protocol=H3ClientProtocol) as protocol:
-                            # Send Request
-                            stream_id = protocol._quic.get_next_available_stream_id()
-                            protocol._h3.send_headers(
-                                stream_id=stream_id,
-                                headers=[
-                                    (b":method", b"GET"),
-                                    (b":scheme", b"https"),
-                                    (b":authority", host.encode()),
-                                    (b":path", path.encode()),
-                                    (b"user-agent", b"httping/0.1"),
-                                ],
-                                end_stream=True
-                            )
-                            # Manually trigger transmit for the headers we just queued
-                            # The protocol loop in 'connect' usually handles transmit on timer, 
-                            # but we can force it or wait.
-                            # Since H3Connection queues frames, we need to flush them to QUIC.
-                            protocol.transmit()
-
-                            # Wait for response
-                            await resp_info.done.wait()
-                            return resp_info.status_code, resp_info.content
-
-                    # Run the async loop
+                signal.setitimer(signal.ITIMER_REAL, args.timeout)
+                req = Request(args.url)
+                # Ensure we accept everything to mimic a standard browser/client slightly better
+                with urlopen(req, timeout=args.timeout) as response:
+                    connected_to = args.url
                     try:
-                        status_code, content = asyncio.run(asyncio.wait_for(perform_h3(), timeout=args.timeout))
-                    except asyncio.TimeoutError:
-                        raise RequestTimeout("Request timed out")
+                            # Attempt to get the IP address from the underlying socket
+                            if hasattr(response.fp, 'raw'):
+                                ip_addr = response.fp.raw._sock.getpeername()[0]
+                                connected_to = ip_addr
+                            elif hasattr(response, 'fp') and hasattr(response.fp, '_sock'):
+                                ip_addr = response.fp._sock.getpeername()[0]
+                                connected_to = ip_addr
+                    except Exception:
+                            pass
+
+                    content = response.read()
+                    status_code = response.getcode()
+                    
+                    # Disable alarm immediately after read successfully
+                    signal.setitimer(signal.ITIMER_REAL, 0)
                     
                     end_time = time.time()
                     duration_ms = (end_time - start_time) * 1000
                     stats['received'] += 1
                     stats['rtts'].append(duration_ms)
-                    
-                    connected_to = args.url # Simplify for H3
                     
                     extra_info = ""
                     if is_trace:
@@ -199,58 +260,17 @@ def main():
                         extra_info = f" ip={ip} colo={colo}"
                         
                     print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={status_code}{extra_info}")
-
-                else:
-                    signal.setitimer(signal.ITIMER_REAL, args.timeout)
-                    req = Request(args.url)
-                    # Ensure we accept everything to mimic a standard browser/client slightly better, 
-                    # mainly to avoid getting blocked by some basic filters if possible, 
-                    # though urllib default user-agent is usually fine for basic checks.
-                    with urlopen(req, timeout=args.timeout) as response:
-                        connected_to = args.url
-                        try:
-                             # Attempt to get the IP address from the underlying socket
-                             # Must be done before reading content as fp might be closed/cleared
-                             if hasattr(response.fp, 'raw'):
-                                 ip_addr = response.fp.raw._sock.getpeername()[0]
-                                 connected_to = ip_addr
-                             elif hasattr(response, 'fp') and hasattr(response.fp, '_sock'):
-                                 # Fallback for some other structures
-                                 ip_addr = response.fp._sock.getpeername()[0]
-                                 connected_to = ip_addr
-                        except Exception:
-                             pass
-
-                        content = response.read()
-                        status_code = response.getcode()
-                        
-                        # Disable alarm immediately after read successfully
-                        signal.setitimer(signal.ITIMER_REAL, 0)
-                        
-                        end_time = time.time()
-                        duration_ms = (end_time - start_time) * 1000
-                        stats['received'] += 1
-                        stats['rtts'].append(duration_ms)
-                        
-                        extra_info = ""
-                        if is_trace:
-                            trace_data = parse_trace(content)
-                            ip = trace_data.get('ip', 'N/A')
-                            colo = trace_data.get('colo', 'N/A')
-                            extra_info = f" ip={ip} colo={colo}"
-                            
-                        print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={status_code}{extra_info}")
-                    
+                
             except RequestTimeout:
-                 print(f"Request timeout for {args.url}: seq={seq}")
+                    print(f"Request timeout for {args.url}: seq={seq}")
             except HTTPError as e:
                 signal.setitimer(signal.ITIMER_REAL, 0)
                 end_time = time.time()
                 duration_ms = (end_time - start_time) * 1000
                 print(f"connected to {args.url}: seq={seq} time={duration_ms:.2f} ms status={e.code}")
             except URLError as e:
-                 signal.setitimer(signal.ITIMER_REAL, 0)
-                 print(f"failed to connect to {args.url}: seq={seq} reason={e.reason}")
+                    signal.setitimer(signal.ITIMER_REAL, 0)
+                    print(f"failed to connect to {args.url}: seq={seq} reason={e.reason}")
             except Exception as e:
                 signal.setitimer(signal.ITIMER_REAL, 0)
                 print(f"error: {e}")
@@ -259,7 +279,6 @@ def main():
                 time.sleep(args.interval)
                 
     except KeyboardInterrupt:
-        # Handled by signal_handler, but just in case loop exits some other way
         pass
         
     print_summary()
