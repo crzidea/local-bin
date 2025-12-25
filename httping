@@ -163,6 +163,18 @@ async def run_http3_session(args):
     seq = 0
     try:
         async with connect(host, port, configuration=configuration, create_protocol=H3ClientProtocol) as protocol:
+             connected_to = host
+             try:
+                 peername = protocol._transport.get_extra_info("peername")
+                 if not peername and hasattr(protocol, "_quic") and protocol._quic._network_paths:
+                      peername = protocol._quic._network_paths[0].addr
+                 if peername:
+                     connected_to = peername[0]
+                     if connected_to.startswith("::ffff:"):
+                         connected_to = connected_to[7:]
+             except Exception:
+                 pass
+
              while seq < args.count:
                 seq += 1
                 stats['sent'] += 1
@@ -202,10 +214,10 @@ async def run_http3_session(args):
                         colo = trace_data.get('colo', 'N/A')
                         extra_info = f" ip={ip} colo={colo}"
                     
-                    print(f"connected to {args.url}: seq={seq} time={duration_ms:.2f} ms status={resp_info.status_code}{extra_info}")
+                    print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={resp_info.status_code}{extra_info}")
 
                 except asyncio.TimeoutError:
-                     print(f"Request timeout for {args.url}: seq={seq}")
+                     print(f"Request timeout for {connected_to}: seq={seq}")
                 except Exception as e:
                      print(f"error: {e}")
 
