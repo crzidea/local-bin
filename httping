@@ -154,7 +154,6 @@ async def run_http3_session(args):
     path = parsed.path or "/"
 
     configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
-    configuration.verify_mode = 0 # Disable SSL verification
     
     # We need to handle IP resolution manually if we want to print connected IP like requests does,
     # but aioquic connect takes host/port.
@@ -236,14 +235,8 @@ def run_http1_session(args):
     try:
         # Create connection object (lazy connect)
         if scheme == 'https':
-            # Use unverified context to match typical flexible ping behavior if desired, 
-            # closely matching simple urlopen or curl -k vibes, but standard ensures security. 
-            # aioquic implementation above disabled verification. Let's mimic that for consistency.
-            import ssl
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            conn = http.client.HTTPSConnection(host, port, timeout=args.timeout, context=context)
+            conn = http.client.HTTPSConnection(host, port, timeout=args.timeout)
+
         else:
             conn = http.client.HTTPConnection(host, port, timeout=args.timeout)
 
