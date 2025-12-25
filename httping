@@ -16,6 +16,9 @@ import statistics
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlparse
+import http.client
+import socket
+
 
 # Optional imports for HTTP/3
 try:
@@ -214,72 +217,87 @@ async def run_http3_session(args):
         print(f"Connection error: {e}")
 
 def run_http1_session(args):
-    parsed_url = urlparse(args.url)
-    is_trace = parsed_url.path == '/cdn-cgi/trace'
+    parsed = urlparse(args.url)
+    host = parsed.hostname
+    port = parsed.port
+    scheme = parsed.scheme
+    if not port:
+        port = 443 if scheme == 'https' else 80
     
-    seq = 0
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+        
+    is_trace = parsed.path == '/cdn-cgi/trace'
+
+    print(f"HTTPING {args.url}")
+    
+    conn = None
     try:
+        # Create connection object (lazy connect)
+        if scheme == 'https':
+            # Use unverified context to match typical flexible ping behavior if desired, 
+            # closely matching simple urlopen or curl -k vibes, but standard ensures security. 
+            # aioquic implementation above disabled verification. Let's mimic that for consistency.
+            import ssl
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            conn = http.client.HTTPSConnection(host, port, timeout=args.timeout, context=context)
+        else:
+            conn = http.client.HTTPConnection(host, port, timeout=args.timeout)
+
+        seq = 0
         while seq < args.count:
             seq += 1
             stats['sent'] += 1
-            
             start_time = time.time()
+            
             try:
-                signal.setitimer(signal.ITIMER_REAL, args.timeout)
-                req = Request(args.url)
-                # Ensure we accept everything to mimic a standard browser/client slightly better
-                with urlopen(req, timeout=args.timeout) as response:
-                    connected_to = args.url
-                    try:
-                            # Attempt to get the IP address from the underlying socket
-                            if hasattr(response.fp, 'raw'):
-                                ip_addr = response.fp.raw._sock.getpeername()[0]
-                                connected_to = ip_addr
-                            elif hasattr(response, 'fp') and hasattr(response.fp, '_sock'):
-                                ip_addr = response.fp._sock.getpeername()[0]
-                                connected_to = ip_addr
-                    except Exception:
-                            pass
-
-                    content = response.read()
-                    status_code = response.getcode()
-                    
-                    # Disable alarm immediately after read successfully
-                    signal.setitimer(signal.ITIMER_REAL, 0)
-                    
-                    end_time = time.time()
-                    duration_ms = (end_time - start_time) * 1000
-                    stats['received'] += 1
-                    stats['rtts'].append(duration_ms)
-                    
-                    extra_info = ""
-                    if is_trace:
-                        trace_data = parse_trace(content)
-                        ip = trace_data.get('ip', 'N/A')
-                        colo = trace_data.get('colo', 'N/A')
-                        extra_info = f" ip={ip} colo={colo}"
-                        
-                    print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={status_code}{extra_info}")
+                # request() auto-connects if needed
+                conn.request("GET", path, headers={"User-Agent": "httping/0.1"})
+                resp = conn.getresponse()
+                content = resp.read() # Read body to clear socket and allow reuse
                 
-            except RequestTimeout:
-                    print(f"Request timeout for {args.url}: seq={seq}")
-            except HTTPError as e:
-                signal.setitimer(signal.ITIMER_REAL, 0)
                 end_time = time.time()
                 duration_ms = (end_time - start_time) * 1000
-                print(f"connected to {args.url}: seq={seq} time={duration_ms:.2f} ms status={e.code}")
-            except URLError as e:
-                    signal.setitimer(signal.ITIMER_REAL, 0)
-                    print(f"failed to connect to {args.url}: seq={seq} reason={e.reason}")
+                stats['received'] += 1
+                stats['rtts'].append(duration_ms)
+                
+                connected_to = host
+                try:
+                    if conn.sock:
+                         connected_to = conn.sock.getpeername()[0]
+                except Exception:
+                     pass
+                
+                extra_info = ""
+                if is_trace:
+                    trace_data = parse_trace(content)
+                    ip = trace_data.get('ip', 'N/A')
+                    colo = trace_data.get('colo', 'N/A')
+                    extra_info = f" ip={ip} colo={colo}"
+                    
+                print(f"connected to {connected_to}: seq={seq} time={duration_ms:.2f} ms status={resp.status}{extra_info}")
+                
+            except socket.timeout:
+                 print(f"Request timeout for {args.url}: seq={seq}")
+                 conn.close()
+            except (socket.error, http.client.HTTPException) as e:
+                 print(f"failed to connect to {args.url}: seq={seq} reason={e}")
+                 conn.close()
             except Exception as e:
-                signal.setitimer(signal.ITIMER_REAL, 0)
-                print(f"error: {e}")
+                 print(f"error: {e}")
+                 conn.close()
 
             if seq < args.count:
                 time.sleep(args.interval)
-                
+
     except KeyboardInterrupt:
         pass
+    finally:
+        if conn:
+            conn.close()
         
     print_summary()
 
