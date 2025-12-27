@@ -48,6 +48,8 @@ if [ "$total_mem" -lt "$MIN_MEM" ]; then
 
     echo "Setting warp-svc memory limit to 100MB."
     sudo systemctl set-property warp-svc MemoryMax=100M
+    # Limit swap usage for warp-svc to 100MB
+    sudo systemctl set-property warp-svc MemorySwapMax=100M
 else
     echo "Memory is sufficient ($total_mem MB). Turning off swap."
     sudo swapoff -a
