@@ -304,7 +304,6 @@ def run_http1_session(args):
         if conn:
             conn.close()
         
-    print_summary()
 
 if __name__ == "__main__":
     main()
