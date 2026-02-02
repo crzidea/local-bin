@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+
+# 1. init with specify
+echo "Initializing specify..."
+specify init . --script sh --ai claude
+
+# 2. rename .claude to .agent
+if [ -d ".claude" ]; then
+    echo "Renaming .claude to .agent..."
+    mv .claude .agent
+fi
+
+# 3. rename .agent/commands to .agent/workflows
+if [ -d ".agent/commands" ]; then
+    echo "Renaming .agent/commands to .agent/workflows..."
+    mv .agent/commands .agent/workflows
+fi
+
+# 4. mkdir -p .gemini/commands
+echo "Creating .gemini/commands..."
+mkdir -p .gemini/commands
+
+# 5. copy files in the script dir specify-assets to the current dir
+echo "Copying assets..."
+ASSETS_DIR="$(dirname "$0")/specify-assets"
+if [ -d "$ASSETS_DIR" ]; then
+    cp -r "$ASSETS_DIR"/* .
+else
+    echo "Error: specify-assets directory not found at $ASSETS_DIR"
+    exit 1
+fi
+
+# 6. run generate-gemini-commands.py
+if [ -f "generate-gemini-commands.py" ]; then
+    echo "Running generate-gemini-commands.py..."
+    python3 generate-gemini-commands.py
+else
+    echo "Error: generate-gemini-commands.py not found"
+    exit 1
+fi
+
+echo "Spec-kit project initialized successfully."
