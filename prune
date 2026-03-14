@@ -60,7 +60,11 @@ fi
 ulimit -n 65535
 
 echo "Pruning docker system..."
-docker system prune --volumes -f
+docker system prune --volumes --force
+
+echo "Pruning docker images..."
+docker image prune --all --force
+
 
 echo "Truncating docker logs..."
 docker ps -aq | xargs docker inspect --format='{{.LogPath}}' | xargs sudo truncate -s 0
