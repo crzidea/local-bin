@@ -77,7 +77,10 @@ echo "Updating Cloudflare Warp key..."
 curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
 
 echo "Running apt autoremove..."
-sudo apt autoremove -y
+sudo apt autoremove --purge -y
+
+echo "Cleaning apt cache..."
+sudo apt-get clean
 
 echo "Updating apt packages..."
 sudo apt update
@@ -94,8 +97,9 @@ journalctl --vacuum-size=100000000
 sudo journalctl --vacuum-size=100000000
 
 echo "Removing old logs and crash reports..."
-sudo rm /var/log/*.log.*.gz
-sudo rm /var/lib/cloudflare-warp/crash_reports/*
+sudo rm -f /var/log/*.log.*.gz
+sudo rm -f /var/log/cloudflare-warp/*.txt.*
+sudo rm -rf /var/lib/cloudflare-warp/crash_reports/*
 
 echo "Cleaning npm cache..."
 npm cache clean --force
